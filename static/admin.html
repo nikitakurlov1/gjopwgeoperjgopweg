@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель Адміністратора</title>
+    <link rel="stylesheet" href="">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .admin-header h1 {
+            color: #007bff;
+        }
+        
+        .admin-logout-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .admin-logout-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .management-section {
+            margin-bottom: 40px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .management-section h2 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .data-table th {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f1f3f5;
+        }
+        
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        /* Trust Box Styles */
+        .trust-box-container {
+            display: flex;
+            gap: 20px;
+            height: 500px;
+        }
+        
+        .conversations-list {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+        
+        .conversation-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .conversation-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .conversation-item.active {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .conversation-name {
+            font-weight: bold;
+        }
+        
+        .admin-chat-view {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+        
+        .admin-message {
+            background-color: #e9ecef;
+            color: #333;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+            margin-right: auto;
+        }
+        
+        .student-message {
+            background-color: #007bff;
+            color: white;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+            margin-left: auto;
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .message-text {
+            margin-bottom: 5px;
+        }
+        
+        .message-time {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        
+        .admin-reply-form {
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background-color: white;
+        }
+        
+        .admin-reply-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+        
+        .admin-reply-form button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .admin-reply-form button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Адмін-панель</h1>
+            <button id="adminLogoutButton" class="admin-logout-btn">Вийти</button>
+        </div>
+        
+        <!-- Users Management Section -->
+        <div class="management-section">
+            <h2>Керування користувачами</h2>
+            <div id="usersTableContainer">
+                <table class="data-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Ім'я</th>
+                            <th>Прізвище</th>
+                            <th>Номер телефону</th>
+                            <th>Адміністратор</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users will be loaded here -->
+                    </tbody>
+                </table>
+                <div id="usersLoading" class="no-data">Завантаження даних...</div>
+            </div>
+        </div>
+        
+        <!-- Posts Management Section -->
+        <div class="management-section">
+            <h2>Керування постами</h2>
+            <div id="postsTableContainer">
+                <table class="data-table" id="postsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Автор</th>
+                            <th>Заголовок</th>
+                            <th>Категорія</th>
+                            <th>Дата створення</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="postsTableBody">
+                        <!-- Posts will be loaded here -->
+                    </tbody>
+                </table>
+                <div id="postsLoading" class="no-data">Завантаження даних...</div>
+            </div>
+        </div>
+        
+        <!-- Comments Management Section -->
+        <div class="management-section">
+            <h2>Керування коментарями</h2>
+            <div id="commentsTableContainer">
+                <table class="data-table" id="commentsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Автор</th>
+                            <th>Коментар</th>
+                            <th>Пост</th>
+                            <th>Дата створення</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commentsTableBody">
+                        <!-- Comments will be loaded here -->
+                    </tbody>
+                </table>
+                <div id="commentsLoading" class="no-data">Завантаження даних...</div>
+            </div>
+        </div>
+        
+        <!-- Trust Box Management Section -->
+        <div class="management-section">
+            <h2>Керування 'Скарбничкою Довіри'</h2>
+            <div class="trust-box-container">
+                <div class="conversations-list" id="conversationsList">
+                    <div class="no-data" id="conversationsLoading">Завантаження розмов...</div>
+                    <!-- Conversations will be loaded here -->
+                </div>
+                <div class="admin-chat-view">
+                    <div class="chat-header" id="chatHeader">Оберіть розмову</div>
+                    <div class="chat-messages" id="adminChatMessages">
+                        <div class="no-data" id="chatLoading">Оберіть розмову для перегляду</div>
+                    </div>
+                    <form class="admin-reply-form" id="adminReplyForm" style="display: none;">
+                        <textarea name="reply_text" placeholder="Напишіть відповідь..." required></textarea>
+                        <button type="submit">Відправити відповідь</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Admin logout functionality
+        document.getElementById('adminLogoutButton')?.addEventListener('click', function() {
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'redirect') {
+                    window.location.href = data.url;
+                } else {
+                    alert(data.message || 'Помилка виходу');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        });
+
+        // Load all admin data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAdminData();
+            loadConversations();
+        });
+
+        function loadAdminData() {
+            loadUsers();
+            loadPosts();
+            loadComments();
+        }
+
+        // Load users
+        function loadUsers() {
+            const usersTableBody = document.getElementById('usersTableBody');
+            const usersLoading = document.getElementById('usersLoading');
+            
+            usersLoading.style.display = 'block';
+            usersTableBody.innerHTML = '';
+            
+            fetch('/api/admin/users')
+            .then(response => response.json())
+            .then(data => {
+                usersLoading.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        usersTableBody.innerHTML = '<tr><td colspan="6" class="no-data">Немає користувачів</td></tr>';
+                        return;
+                    }
+                    
+                    data.data.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.first_name}</td>
+                            <td>${user.last_name}</td>
+                            <td>${user.phone}</td>
+                            <td>${user.is_admin ? 'Так' : 'Ні'}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deleteUser(${user.id})">Видалити</button>
+                            </td>
+                        `;
+                        usersTableBody.appendChild(row);
+                    });
+                } else {
+                    usersTableBody.innerHTML = `<tr><td colspan="6" class="no-data">Помилка: ${data.message}</td></tr>`;
+                }
+            })
+            .catch(error => {
+                usersLoading.style.display = 'none';
+                usersTableBody.innerHTML = `<tr><td colspan="6" class="no-data">Помилка завантаження даних</td></tr>`;
+                console.error('Error:', error);
+            });
+        }
+
+        // Load posts
+        function loadPosts() {
+            const postsTableBody = document.getElementById('postsTableBody');
+            const postsLoading = document.getElementById('postsLoading');
+            
+            postsLoading.style.display = 'block';
+            postsTableBody.innerHTML = '';
+            
+            fetch('/api/admin/posts')
+            .then(response => response.json())
+            .then(data => {
+                postsLoading.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        postsTableBody.innerHTML = '<tr><td colspan="6" class="no-data">Немає постів</td></tr>';
+                        return;
+                    }
+                    
+                    data.data.forEach(post => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${post.id}</td>
+                            <td>${post.author_first_name} ${post.author_last_name}</td>
+                            <td>${post.title}</td>
+                            <td>${post.category}</td>
+                            <td>${new Date(post.created_at).toLocaleString('uk-UA')}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deletePost(${post.id})">Видалити</button>
+                            </td>
+                        `;
+                        postsTableBody.appendChild(row);
+                    });
+                } else {
+                    postsTableBody.innerHTML = `<tr><td colspan="6" class="no-data">Помилка: ${data.message}</td></tr>`;
+                }
+            })
+            .catch(error => {
+                postsLoading.style.display = 'none';
+                postsTableBody.innerHTML = `<tr><td colspan="6" class="no-data">Помилка завантаження даних</td></tr>`;
+                console.error('Error:', error);
+            });
+        }
+
+        // Load comments
+        function loadComments() {
+            const commentsTableBody = document.getElementById('commentsTableBody');
+            const commentsLoading = document.getElementById('commentsLoading');
+            
+            commentsLoading.style.display = 'block';
+            commentsTableBody.innerHTML = '';
+            
+            fetch('/api/admin/comments')
+            .then(response => response.json())
+            .then(data => {
+                commentsLoading.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        commentsTableBody.innerHTML = '<tr><td colspan="6" class="no-data">Немає коментарів</td></tr>';
+                        return;
+                    }
+                    
+                    data.data.forEach(comment => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${comment.id}</td>
+                            <td>${comment.author_first_name} ${comment.author_last_name}</td>
+                            <td>${comment.content}</td>
+                            <td>${comment.post_title}</td>
+                            <td>${new Date(comment.created_at).toLocaleString('uk-UA')}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deleteComment(${comment.id})">Видалити</button>
+                            </td>
+                        `;
+                        commentsTableBody.appendChild(row);
+                    });
+                } else {
+                    commentsTableBody.innerHTML = `<tr><td colspan="6" class="no-data">Помилка: ${data.message}</td></tr>`;
+                }
+            })
+            .catch(error => {
+                commentsLoading.style.display = 'none';
+                commentsTableBody.innerHTML = `<tr><td colspan="6" class="no-data">Помилка завантаження даних</td></tr>`;
+                console.error('Error:', error);
+            });
+        }
+
+        // Delete user
+        function deleteUser(userId) {
+            if (!confirm('Ви впевнені, що хочете видалити цього користувача? Всі його пости та коментарі також будуть видалені.')) {
+                return;
+            }
+            
+            fetch(`/api/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    loadUsers(); // Reload users table
+                    alert('Користувача видалено успішно');
+                } else {
+                    alert(data.message || 'Помилка видалення користувача');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+
+        // Delete post
+        function deletePost(postId) {
+            if (!confirm('Ви впевнені, що хочете видалити цей пост? Всі коментарі до нього також будуть видалені.')) {
+                return;
+            }
+            
+            fetch(`/api/admin/posts/${postId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    loadPosts(); // Reload posts table
+                    alert('Пост видалено успішно');
+                } else {
+                    alert(data.message || 'Помилка видалення поста');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+
+        // Delete comment
+        function deleteComment(commentId) {
+            if (!confirm('Ви впевнені, що хочете видалити цей коментар?')) {
+                return;
+            }
+            
+            fetch(`/api/admin/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    loadComments(); // Reload comments table
+                    alert('Коментар видалено успішно');
+                } else {
+                    alert(data.message || 'Помилка видалення коментаря');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+
+        // Trust Box functionality
+        let currentConversationUserId = null;
+
+        // Load conversations
+        function loadConversations() {
+            const conversationsList = document.getElementById('conversationsList');
+            const conversationsLoading = document.getElementById('conversationsLoading');
+            
+            // Check if elements exist
+            if (!conversationsList || !conversationsLoading) {
+                console.error('Required elements not found in DOM for conversations');
+                return;
+            }
+            
+            conversationsLoading.style.display = 'block';
+            conversationsList.innerHTML = '';
+            
+            fetch('/api/admin/trustbox/conversations')
+            .then(response => response.json())
+            .then(data => {
+                conversationsLoading.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        conversationsList.innerHTML = '<div class="no-data">Немає розмов</div>';
+                        return;
+                    }
+                    
+                    data.data.forEach(user => {
+                        const conversationItem = document.createElement('div');
+                        conversationItem.className = 'conversation-item';
+                        conversationItem.dataset.userId = user.id;
+                        conversationItem.innerHTML = `
+                            <div class="conversation-name">${user.first_name} ${user.last_name}</div>
+                        `;
+                        
+                        conversationItem.addEventListener('click', function() {
+                            // Remove active class from all items
+                            document.querySelectorAll('.conversation-item').forEach(item => {
+                                item.classList.remove('active');
+                            });
+                            
+                            // Add active class to clicked item
+                            this.classList.add('active');
+                            
+                            // Load conversation
+                            loadConversation(user.id, user.first_name, user.last_name);
+                        });
+                        
+                        conversationsList.appendChild(conversationItem);
+                    });
+                } else {
+                    conversationsList.innerHTML = `<div class="no-data">Помилка: ${data.message}</div>`;
+                }
+            })
+            .catch(error => {
+                conversationsLoading.style.display = 'none';
+                conversationsList.innerHTML = `<div class="no-data">Помилка завантаження розмов</div>`;
+                console.error('Error:', error);
+            });
+        }
+
+        // Load conversation
+        function loadConversation(userId, firstName, lastName) {
+            currentConversationUserId = userId;
+            
+            const chatHeader = document.getElementById('chatHeader');
+            const chatMessages = document.getElementById('adminChatMessages');
+            const chatLoading = document.getElementById('chatLoading');
+            const adminReplyForm = document.getElementById('adminReplyForm');
+            
+            // Check if elements exist
+            if (!chatHeader || !chatMessages || !chatLoading) {
+                console.error('Required elements not found in DOM for conversation');
+                return;
+            }
+            
+            chatHeader.textContent = `Розмова з ${firstName} ${lastName}`;
+            chatLoading.textContent = 'Завантаження повідомлень...';
+            chatLoading.style.display = 'block';
+            chatMessages.innerHTML = '';
+            if (adminReplyForm) {
+                adminReplyForm.style.display = 'block';
+            }
+            
+            fetch(`/api/admin/trustbox/conversation/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                chatLoading.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        chatMessages.innerHTML = '<div class="no-data">Повідомлень немає</div>';
+                        return;
+                    }
+                    
+                    // Display messages
+                    data.data.forEach(message => {
+                        displayAdminMessage(message);
+                    });
+                    
+                    // Scroll to bottom
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    chatMessages.innerHTML = `<div class="no-data">Помилка: ${data.message}</div>`;
+                }
+            })
+            .catch(error => {
+                chatLoading.style.display = 'none';
+                chatMessages.innerHTML = `<div class="no-data">Помилка завантаження повідомлень</div>`;
+                console.error('Error:', error);
+            });
+        }
+
+        // Display a single message in admin view
+        function displayAdminMessage(message) {
+            const chatMessages = document.getElementById('adminChatMessages');
+            
+            // Check if element exists
+            if (!chatMessages) {
+                console.error('Chat messages element not found');
+                return;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.sent_by_admin ? 'admin-message' : 'student-message'}`;
+            
+            const senderName = message.sent_by_admin ? 'Ви' : `${message.first_name} ${message.last_name}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-sender">${senderName}</div>
+                <div class="message-text">${message.message_text}</div>
+                <div class="message-time">${formatDate(message.timestamp)}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+        }
+
+        // Handle admin reply form submission
+        document.getElementById('adminReplyForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!currentConversationUserId) {
+                alert('Оберіть розмову');
+                return;
+            }
+            
+            const replyText = this.reply_text.value.trim();
+            if (!replyText) return;
+            
+            // Send reply
+            fetch(`/api/admin/trustbox/reply/${currentConversationUserId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message_text: replyText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Clear form and reload conversation
+                    this.reply_text.value = '';
+                    loadConversation(currentConversationUserId, 
+                        document.querySelector('.conversation-item.active')?.dataset.firstName || '',
+                        document.querySelector('.conversation-item.active')?.dataset.lastName || '');
+                } else {
+                    alert(data.message || 'Помилка відправки відповіді');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        });
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('uk-UA') + ' ' + date.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
+        }
+    </script>
+</body>
+</html>

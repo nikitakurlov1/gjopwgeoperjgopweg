@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Стрічка - Шкільний Месенджер</title>
+    <link rel="stylesheet" href="lenta.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="unified-header">
+            <div class="header-top">
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Пошук за текстом або автором...">
+                </div>
+                <div class="header-actions">
+                    <div class="trust-box-container">
+                        <button id="trustBoxButton" class="trust-box-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 12C13.6569 12 15 10.6569 15 9C15 7.34315 13.6569 6 12 6C10.3431 6 9 7.34315 9 9C9 10.6569 10.3431 12 12 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 14C9.65 14 5 15.17 5 17.5V19H19V17.5C19 15.17 14.35 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Скарбничка довіри</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="category-scroll-container">
+                <div class="category-buttons-container">
+                    <button class="category-btn active" data-category="all">Усі</button>
+                    <button class="category-btn" data-category="Пропозиція">Пропозиція</button>
+                    <button class="category-btn" data-category="Опитування">Опитування</button>
+                    <button class="category-btn" data-category="Оголошення">Оголошення</button>
+                    <button class="category-btn" data-category="Пост">Пост</button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="feed-container">
+                <div id="postFeed" class="post-feed">
+                    <!-- Posts will be loaded here dynamically -->
+                </div>
+            </div>
+        </main>
+        
+        <nav class="bottom-nav">
+            <div class="nav-container">
+                <a href="lenta.html" class="nav-item active">
+                    <div class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="nav-text">Стрічка</div>
+                </a>
+                <a href="create_post.html" class="nav-item">
+                    <div class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="nav-text">Створити</div>
+                </a>
+                <a href="profile.html" class="nav-item">
+                    <div class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="nav-text">Профіль</div>
+                </a>
+            </div>
+        </nav>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Load posts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPosts();
+            
+            // Add trust box functionality
+            document.getElementById('trustBoxButton').addEventListener('click', function() {
+                window.location.href = 'trust_box.html';
+            });
+            
+            // Add search functionality
+            document.getElementById('searchInput').addEventListener('input', function() {
+                loadPosts();
+            });
+            
+            // Add category filter functionality
+            document.querySelectorAll('.category-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.category-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Load posts with new category filter
+                    loadPosts();
+                });
+            });
+        });
+        
+        // Debounce function to limit API calls
+        let searchTimeout;
+        
+        function loadPosts() {
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            // Set new timeout to delay the search
+            searchTimeout = setTimeout(() => {
+                const searchTerm = document.getElementById('searchInput').value;
+                const activeCategoryBtn = document.querySelector('.category-btn.active');
+                const categoryFilter = activeCategoryBtn ? activeCategoryBtn.dataset.category : 'all';
+                
+                let url = '/api/posts';
+                const params = [];
+                
+                if (searchTerm) {
+                    params.push(`search=${encodeURIComponent(searchTerm)}`);
+                }
+                
+                if (categoryFilter && categoryFilter !== 'all') {
+                    params.push(`category=${encodeURIComponent(categoryFilter)}`);
+                }
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                
+                fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Always filter by category on the client as well
+                        const activeCategoryBtn = document.querySelector('.category-btn.active');
+                        const categoryFilterNow = activeCategoryBtn ? activeCategoryBtn.dataset.category : 'all';
+                        let posts = Array.isArray(data.data) ? data.data : [];
+                        if (categoryFilterNow && categoryFilterNow !== 'all') {
+                            posts = posts.filter(p => (p.category === categoryFilterNow));
+                        }
+                        displayPosts(posts);
+                    } else {
+                        console.error('Error loading posts:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    displayPosts([]); // Display empty state on error
+                });
+            }, 300); // 300ms delay
+        }
+        
+        function displayPosts(posts) {
+            const postFeed = document.getElementById('postFeed');
+            if (!postFeed) return;
+            
+            postFeed.innerHTML = '';
+            
+            if (posts.length === 0) {
+                postFeed.innerHTML = '<p class="no-posts">Поки немає постів. Будьте першим, хто створить пост!</p>';
+                return;
+            }
+            
+            posts.forEach(post => {
+                // Generate poll options HTML if this is a poll post
+                let pollOptionsHtml = '';
+                if (post.category === 'Опитування' && post.poll_options && post.poll_options.length > 0) {
+                    pollOptionsHtml = '<div class="poll-options"><h4>Варіанти відповідей:</h4><ul>';
+                    let totalVotes = 0;
+                    
+                    // Calculate total votes for percentage calculation
+                    post.poll_options.forEach(option => {
+                        totalVotes += option.vote_count;
+                    });
+                    
+                    post.poll_options.forEach(option => {
+                        const percentage = totalVotes > 0 ? Math.round((option.vote_count / totalVotes) * 100) : 0;
+                        const userVotedClass = option.user_voted ? 'user-voted' : '';
+                        
+                        pollOptionsHtml += `
+                            <li class="poll-option ${userVotedClass}" data-option-id="${option.id}" data-post-id="${post.id}">
+                                <div class="option-content">
+                                    <span class="option-text">${option.option_text}</span>
+                                    <span class="vote-count">(${option.vote_count} голосів)</span>
+                                </div>
+                                <div class="vote-bar">
+                                    <div class="vote-bar-fill" style="width: ${percentage}%"></div>
+                                </div>
+                                <div class="vote-percentage">${percentage}%</div>
+                            </li>
+                        `;
+                    });
+                    
+                    pollOptionsHtml += '</ul>';
+                    
+                    if (!post.user_voted) {
+                        pollOptionsHtml += '<button class="submit-vote-btn" data-post-id="' + post.id + '">Проголосувати</button>';
+                    } else {
+                        pollOptionsHtml += '<p class="vote-status">Ви вже проголосували</p>';
+                    }
+                    
+                    pollOptionsHtml += '</div>';
+                }
+                
+                const postElement = document.createElement('div');
+                postElement.className = 'post-card';
+                postElement.innerHTML = `
+                    <div class="post-header">
+                        <div class="author-info">
+                            <img src="${post.author_avatar_url}" alt="Avatar" class="author-avatar">
+                            <div class="author-details">
+                                <div class="author-name">${post.author_first_name} ${post.author_last_name}</div>
+                                <div class="post-timestamp">${formatDate(post.created_at)}</div>
+                            </div>
+                        </div>
+                        <div class="category-badge ${post.category.toLowerCase()}">${post.category}</div>
+                    </div>
+                    <div class="post-content">
+                        <h3 class="post-title">${post.title}</h3>
+                        <p class="post-text">${post.content}</p>
+                        ${pollOptionsHtml}
+                        ${post.image_url ? `<div class="post-image-container"><img src="${post.image_url}" alt="Post image" class="post-image"></div>` : ''}
+                    </div>
+                    <div class="post-actions">
+                        <button class="action-button like-button" data-post-id="${post.id}">
+                            <span class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.8 18.9V9.1M19.8 12.1C19.8 11.044 19.356 10.033 18.573 9.25C17.789 8.467 16.778 8.022 15.722 8.022H12.333L12.933 4.911C12.959 4.781 12.951 4.646 12.909 4.52C12.867 4.394 12.793 4.281 12.694 4.19L11.7 3.2L6.3 8.6C6.111 8.789 6 9.044 6 9.3V17.7C6 17.956 6.111 18.211 6.3 18.4L10.278 21.6C10.4 21.711 10.544 21.789 10.7 21.822C10.856 21.856 11.011 21.856 11.167 21.822H15.722C16.4 21.822 17.022 21.556 17.511 21.044C18 20.533 18.267 19.911 18.267 19.178V18.9L16.333 12.333L18.267 12.333H19.2C19.356 12.333 19.5 12.267 19.611 12.156C19.722 12.044 19.789 11.9 19.789 11.733L19.8 12.1Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="action-text">Подобається</span>
+                            <span class="action-count">${post.like_count}</span>
+                        </button>
+                        <button class="action-button comment-button" data-post-id="${post.id}">
+                            <span class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 11.5C21 16.7467 16.7467 21 11.5 21C10.5638 21 9.65178 20.8524 8.79178 20.5745L3 22L4.42553 16.2082C4.14764 15.3482 4 14.4362 4 13.5C4 8.25329 8.25329 4 13.5 4C18.7467 4 23 8.25329 23 13.5C23 12.8333 22.8333 12.1667 22.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="action-text">Коментувати</span>
+                        </button>
+                    </div>
+                    <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                        <div class="comments-list" id="comments-list-${post.id}">
+                            <!-- Comments will be loaded here -->
+                        </div>
+                        <form class="comment-form" data-post-id="${post.id}">
+                            <input type="text" class="comment-input" placeholder="Напишіть коментар..." required>
+                            <button type="submit" class="submit-comment-btn">Відправити</button>
+                        </form>
+                    </div>
+                `;
+                postFeed.appendChild(postElement);
+            });
+            
+            // Add event listeners for poll options
+            document.querySelectorAll('.poll-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // Only allow selection if user hasn't voted yet
+                    const postId = this.getAttribute('data-post-id');
+                    const post = posts.find(p => p.id == postId);
+                    
+                    if (!post.user_voted) {
+                        // Remove selection from other options in the same poll
+                        const siblings = this.parentNode.querySelectorAll('.poll-option');
+                        siblings.forEach(sibling => {
+                            sibling.classList.remove('selected');
+                        });
+                        
+                        // Add selection to clicked option
+                        this.classList.add('selected');
+                    }
+                });
+            });
+            
+            // Add event listeners for vote buttons
+            document.querySelectorAll('.submit-vote-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.getAttribute('data-post-id');
+                    const selectedOption = document.querySelector(`.poll-option.selected[data-post-id="${postId}"]`);
+                    
+                    if (!selectedOption) {
+                        alert('Будь ласка, виберіть варіант відповіді');
+                        return;
+                    }
+                    
+                    const optionId = selectedOption.getAttribute('data-option-id');
+                    
+                    // Send vote to server
+                    fetch(`/api/posts/${postId}/vote`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ option_id: optionId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Reload posts to show updated vote counts
+                            loadPosts();
+                        } else {
+                            alert(data.message || 'Помилка голосування');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Сталася помилка. Спробуйте ще раз.');
+                    });
+                });
+            });
+            
+            // Add event listeners for like buttons
+            document.querySelectorAll('.like-button').forEach(button => {
+                // Create a new button element to remove all event listeners
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                // Add event listener to the new button
+                newButton.addEventListener('click', function() {
+                    const postId = this.getAttribute('data-post-id');
+                    toggleLike(postId);
+                });
+            });
+            
+            // Add event listeners for comment buttons
+            document.querySelectorAll('.comment-button').forEach(button => {
+                // Create a new button element to remove all event listeners
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                // Add event listener to the new button
+                newButton.addEventListener('click', function() {
+                    const postId = this.getAttribute('data-post-id');
+                    toggleComments(postId);
+                });
+            });
+            
+            // Add event listeners for comment forms
+            document.querySelectorAll('.comment-form').forEach(form => {
+                // Create a new form element to remove all event listeners
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+                
+                // Add event listener to the new form
+                newForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const postId = this.getAttribute('data-post-id');
+                    const commentInput = this.querySelector('.comment-input');
+                    const commentText = commentInput.value.trim();
+                    if (commentText) {
+                        postComment(postId, commentText);
+                        commentInput.value = '';
+                    }
+                });
+            });
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('uk-UA') + ' ' + date.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
+        }
+        
+        // Toggle like for a post
+        function toggleLike(postId) {
+            fetch(`/api/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update the like button UI
+                    const likeButton = document.querySelector(`.like-button[data-post-id="${postId}"]`);
+                    const likeCount = likeButton.querySelector('.action-count');
+                    
+                    likeCount.textContent = data.data.new_like_count;
+                    
+                    // Change button appearance based on like status
+                    if (data.data.liked_by_user) {
+                        likeButton.classList.add('liked');
+                    } else {
+                        likeButton.classList.remove('liked');
+                    }
+                } else {
+                    alert(data.message || 'Помилка при зміні статусу вподобання');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+        
+        // Toggle comments section for a post
+        function toggleComments(postId) {
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            if (commentsSection.style.display === 'none') {
+                commentsSection.style.display = 'block';
+                // Load comments when section is opened
+                fetchComments(postId);
+            } else {
+                commentsSection.style.display = 'none';
+            }
+        }
+        
+        // Fetch comments for a post
+        function fetchComments(postId) {
+            fetch(`/api/posts/${postId}/comments`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayComments(postId, data.data);
+                } else {
+                    console.error('Error fetching comments:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // Display comments for a post
+        function displayComments(postId, comments) {
+            const commentsList = document.getElementById(`comments-list-${postId}`);
+            commentsList.innerHTML = '';
+            
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<p class="no-comments">Поки немає коментарів. Будьте першим, хто залишить коментар!</p>';
+                return;
+            }
+            
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                commentElement.innerHTML = `
+                    <div class="comment-author">${comment.author_first_name} ${comment.author_last_name}</div>
+                    <div class="comment-content">${comment.content}</div>
+                    <div class="comment-timestamp">${formatDate(comment.created_at)}</div>
+                `;
+                commentsList.appendChild(commentElement);
+            });
+        }
+        
+        // Post a new comment
+        function postComment(postId, commentText) {
+            fetch(`/api/posts/${postId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: commentText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Add the new comment to the list
+                    const commentsList = document.getElementById(`comments-list-${postId}`);
+                    // Remove "no comments" message if it exists
+                    const noCommentsMsg = commentsList.querySelector('.no-comments');
+                    if (noCommentsMsg) {
+                        noCommentsMsg.remove();
+                    }
+                    
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'comment';
+                    commentElement.innerHTML = `
+                        <div class="comment-author">${data.data.author_first_name} ${data.data.author_last_name}</div>
+                        <div class="comment-content">${data.data.content}</div>
+                        <div class="comment-timestamp">${formatDate(data.data.created_at)}</div>
+                    `;
+                    commentsList.appendChild(commentElement);
+                } else {
+                    alert(data.message || 'Помилка при додаванні коментаря');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+    </script>
+</body>
+</html>

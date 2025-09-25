@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Скарбничка Довіри</title>
+    <link rel="stylesheet" href="trust_box.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="lenta.html" class="back-btn" aria-label="Назад до стрічки">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Назад</span>
+            </a>
+            <h1>Скарбничка Довіри</h1>
+        </header>
+        
+        <div class="trust-box-container">
+            <div class="chat-window" id="trustBoxChat">
+                <div class="no-messages" id="noMessages">Завантаження повідомлень...</div>
+                <!-- Messages will be loaded here -->
+            </div>
+            
+            <form class="send-message-form" id="sendMessageForm">
+                <textarea 
+                    name="message_text" 
+                    placeholder="Напишіть ваше повідомлення тут..." 
+                    required></textarea>
+                <button type="submit">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        // Load message history on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMessageHistory();
+            
+            // Add logout functionality
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', function() {
+                    fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'redirect') {
+                            window.location.href = data.url;
+                        } else {
+                            alert(data.message || 'Помилка виходу');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Сталася помилка. Спробуйте ще раз.');
+                    });
+                });
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('sendMessageForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const messageText = this.message_text.value.trim();
+            if (!messageText) return;
+            
+            // Send message
+            fetch('/api/trustbox/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message_text: messageText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Clear form and reload messages
+                    this.message_text.value = '';
+                    loadMessageHistory();
+                } else {
+                    alert(data.message || 'Помилка відправки повідомлення');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        });
+
+        // Load message history
+        function loadMessageHistory() {
+            const chatWindow = document.getElementById('trustBoxChat');
+            const noMessages = document.getElementById('noMessages');
+            
+            // Check if elements exist
+            if (!chatWindow) {
+                console.error('Chat window element not found');
+                return;
+            }
+            
+            // Initialize noMessages if not found
+            if (!noMessages) {
+                console.warn('No messages element not found, creating one');
+                // Clear chat window and add loading message
+                chatWindow.innerHTML = '<div class="no-messages">Завантаження повідомлень...</div>';
+            } else {
+                noMessages.textContent = 'Завантаження повідомлень...';
+                noMessages.style.display = 'block';
+            }
+            chatWindow.innerHTML = '';
+            
+            fetch('/api/trustbox/history')
+            .then(response => response.json())
+            .then(data => {
+                // Handle noMessages element safely
+                if (noMessages) {
+                    noMessages.style.display = 'none';
+                } else {
+                    // If noMessages doesn't exist, clear any temporary messages
+                    const tempMessages = chatWindow.querySelector('.no-messages');
+                    if (tempMessages) {
+                        tempMessages.style.display = 'none';
+                    }
+                }
+                
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        if (noMessages) {
+                            noMessages.textContent = 'Повідомлень немає. Напишіть перше повідомлення!';
+                            noMessages.style.display = 'block';
+                        } else {
+                            chatWindow.innerHTML = '<div class="no-messages" style="display: block;">Повідомлень немає. Напишіть перше повідомлення!</div>';
+                        }
+                        return;
+                    }
+                    
+                    // Display messages
+                    data.data.forEach(message => {
+                        displayMessage(message);
+                    });
+                    
+                    // Scroll to bottom
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                } else {
+                    if (noMessages) {
+                        noMessages.textContent = `Помилка: ${data.message}`;
+                        noMessages.style.display = 'block';
+                    } else {
+                        chatWindow.innerHTML = `<div class="no-messages" style="display: block;">Помилка: ${data.message}</div>`;
+                    }
+                }
+            })
+            .catch(error => {
+                if (noMessages) {
+                    noMessages.textContent = 'Помилка завантаження повідомлень';
+                    noMessages.style.display = 'block';
+                } else {
+                    // Create error message if noMessages element doesn't exist
+                    chatWindow.innerHTML = '<div class="no-messages" style="display: block; color: red;">Помилка завантаження повідомлень</div>';
+                }
+                console.error('Error:', error);
+            });
+        }
+
+        // Display a single message
+        function displayMessage(message) {
+            const chatWindow = document.getElementById('trustBoxChat');
+            
+            // Check if element exists
+            if (!chatWindow) {
+                console.error('Chat window element not found');
+                return;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.sent_by_admin ? 'admin-message' : 'student-message'}`;
+            
+            const senderName = message.sent_by_admin ? 'Адміністратор' : 'Ви';
+            
+            messageDiv.innerHTML = `
+                <div class="message-sender">${senderName}</div>
+                <div class="message-text">${message.message_text}</div>
+                <div class="message-time">${formatDate(message.timestamp)}</div>
+            `;
+            
+            chatWindow.appendChild(messageDiv);
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('uk-UA') + ' ' + date.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
+        }
+    </script>
+</body>
+</html>

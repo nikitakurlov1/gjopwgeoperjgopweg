@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Реєстрація - Шкільний Месенджер</title>
+    <link rel="stylesheet" href="register.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Створення акаунту</h1>
+        </header>
+        <main>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="first_name">Ім'я</label>
+                    <input type="text" id="first_name" name="first_name" placeholder="Ваше ім'я" required>
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Прізвище</label>
+                    <input type="text" id="last_name" name="last_name" placeholder="Ваше прізвище" required>
+                </div>
+                <div class="form-group">
+                    <label for="class">Клас</label>
+                    <input type="text" id="class" name="class" placeholder="Наприклад, 9-А">
+                </div>
+                <div class="form-group">
+                    <label for="category">Ваша роль</label>
+                    <select id="category" name="category" required>
+                        <option value="" disabled selected>Оберіть роль</option>
+                        <option value="Учень">Учень</option>
+                        <option value="Вчитель">Вчитель</option>
+                        <option value="Батько/Мати">Батько/Мати</option>
+                        <option value="Інше">Інше</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="school">Навчальний заклад</label>
+                    <select id="school" name="school" required>
+                        <option value="" disabled selected>Оберіть заклад</option>
+                        <option value="Первозванівський ліцей">Первозванівський ліцей</option>
+                        <option value="Калинівська філія">Калинівська філія</option>
+                        <option value="Степова філія">Степова філія</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Номер телефону</label>
+                    <input type="tel" id="phone" name="phone" placeholder="+380 (XX) XXX-XX-XX" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Придумайте пароль</label>
+                    <input type="password" id="password" name="password" placeholder="Мінімум 8 символів" required minlength="8">
+                </div>
+                <button type="submit" class="submit-btn">Зареєструватися</button>
+                <p class="switch-form">
+                    <a href="index.html">Вже є акаунт? Увійти</a>
+                </p>
+            </form>
+        </main>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

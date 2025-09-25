@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Вхід - Шкільний Месенджер</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Вхід в акаунт</h1>
+        </header>
+        <main>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="phone">Номер телефону</label>
+                    <input type="text" id="phone" name="phone" placeholder="Введіть номер телефону" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" placeholder="Введіть ваш пароль" required>
+                </div>
+                <button type="submit" class="submit-btn">Увійти</button>
+                <p class="switch-form">
+                    <a href="register.html">Немає акаунту? Зареєструватися</a>
+                </p>
+            </form>
+        </main>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

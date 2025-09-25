@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Створення Посту - Шкільний Месенджер</title>
+    <link rel="stylesheet" href="create_post.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <main>
+            <form id="createPostForm">
+                <div class="form-group">
+                    <label for="title">Заголовок поста</label>
+                    <input type="text" id="title" name="title" placeholder="Введіть яскравий заголовок" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="content">Текст поста</label>
+                    <textarea id="content" name="content" placeholder="Що у вас на думці?" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Оберіть категорію</label>
+                    <select id="category" name="category" required>
+                        <option value="" disabled selected>Оберіть категорію</option>
+                        <option value="Пропозиція">Пропозиція</option>
+                        <option value="Опитування">Опитування</option>
+                        <option value="Оголошення">Оголошення</option>
+                        <option value="Пост">Пост</option>
+                    </select>
+                </div>
+                
+                <!-- Poll Options Container -->
+                <div id="pollOptionsContainer" style="display: none;">
+                    <label>Варіанти відповідей</label>
+                    <div class="form-group">
+                        <input type="text" name="poll_options[]" placeholder="Варіант 1">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="poll_options[]" placeholder="Варіант 2">
+                    </div>
+                    <button type="button" id="addPollOptionBtn" class="submit-btn">Додати варіант</button>
+                </div>
+                
+                <div class="form-group file-upload-group">
+                    <label for="image" class="file-upload-label">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21.25 12.75V18.25C21.25 19.9069 19.9069 21.25 18.25 21.25H5.75C4.09315 21.25 2.75 19.9069 2.75 18.25V5.75C2.75 4.09315 4.09315 2.75 5.75 2.75H12.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.25 6.25L14.75 2.75L9.25 8.25V11.75H12.75L18.25 6.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14.75 2.75L18.25 6.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.25 12.75H12.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span>Додати зображення</span>
+                    </label>
+                    <input type="file" id="image" name="image" accept="image/*" class="file-upload-input">
+                    <span id="fileName" class="file-name"></span>
+                </div>
+                
+                <button type="submit" class="submit-btn">Опублікувати</button>
+            </form>
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="lenta.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-text">Стрічка</div>
+            </a>
+            <a href="create_post.html" class="nav-item active">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-text">Створити</div>
+            </a>
+            <a href="profile.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-text">Профіль</div>
+            </a>
+        </nav>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageInput = document.getElementById('image');
+            const fileNameSpan = document.getElementById('fileName');
+            const categorySelect = document.getElementById('category');
+            const pollOptionsContainer = document.getElementById('pollOptionsContainer');
+            const addPollOptionBtn = document.getElementById('addPollOptionBtn');
+
+            if (imageInput) {
+                imageInput.addEventListener('change', function() {
+                    if (this.files && this.files.length > 0) {
+                        fileNameSpan.textContent = this.files[0].name;
+                    } else {
+                        fileNameSpan.textContent = '';
+                    }
+                });
+            }
+
+            if (categorySelect && pollOptionsContainer) {
+                categorySelect.addEventListener('change', function() {
+                    if (this.value === 'Опитування') {
+                        pollOptionsContainer.style.display = 'block';
+                    } else {
+                        pollOptionsContainer.style.display = 'none';
+                    }
+                });
+            }
+
+            if (addPollOptionBtn) {
+                addPollOptionBtn.addEventListener('click', function() {
+                    const newOption = document.createElement('div');
+                    newOption.className = 'form-group';
+                    newOption.innerHTML = '<input type="text" name="poll_options[]" placeholder="Новий варіант">';
+                    pollOptionsContainer.insertBefore(newOption, addPollOptionBtn);
+                });
+            }
+
+            const createPostForm = document.getElementById('createPostForm');
+            if (createPostForm) {
+                createPostForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+
+                    fetch('/api/create_post', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            window.location.href = 'lenta.html';
+                        } else {
+                            alert(data.message || 'Помилка створення поста');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Сталася помилка. Спробуйте ще раз.');
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Мій Профіль - Шкільний Месенджер</title>
+    <link rel="stylesheet" href="profile.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Мій Профіль</h1>
+            <button id="logoutButton" class="submit-btn">Вийти</button>
+        </header>
+        
+        <main>
+            <!-- Profile Header Section -->
+            <section class="profile-header">
+                <div class="profile-picture-container">
+                    <img id="profilePicture" src="static/default-avatar.png" alt="Фото профілю" class="profile-picture">
+                    <form id="avatarUploadForm" enctype="multipart/form-data">
+                        <label for="avatar" class="file-label">Змінити фото</label>
+                        <input type="file" id="avatar" name="avatar" accept="image/*" class="file-input">
+                    </form>
+                </div>
+                <h1 id="userName">Завантаження...</h1>
+            </section>
+            
+            <!-- Reputation and Statistics Panel -->
+            <section class="stats-panel">
+                <div class="stat-item">
+                    <span class="stat-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Зірки репутації
+                    </span>
+                    <span id="totalStars" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Створено постів</span>
+                    <span id="postsCreated" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Отримано лайків</span>
+                    <span id="likesReceived" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Залишено коментарів</span>
+                    <span id="commentsMade" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Поставлено лайків</span>
+                    <span id="likesGiven" class="stat-value">0</span>
+                </div>
+            </section>
+            
+            <!-- User Posts Section -->
+            <section class="content-section">
+                <h2>Мої пости</h2>
+                <div id="userPosts" class="posts-container">
+                    <!-- Posts will be loaded here dynamically -->
+                </div>
+            </section>
+            
+            <!-- User Comments Section -->
+            <section class="content-section">
+                <h2>Мої коментарі</h2>
+                <div id="userComments" class="comments-container">
+                    <!-- Comments will be loaded here dynamically -->
+                </div>
+            </section>
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="lenta.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-text">Стрічка</div>
+            </a>
+            <a href="create_post.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-text">Створити</div>
+            </a>
+            <a href="profile.html" class="nav-item active">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nav-text">Профіль</div>
+            </a>
+        </nav>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Load profile data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfileData();
+            
+            // Handle avatar upload on file selection
+            document.getElementById('avatar').addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    uploadAvatar();
+                }
+            });
+            
+            // Handle logout
+            document.getElementById('logoutButton').addEventListener('click', function() {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'redirect') {
+                        window.location.href = data.url;
+                    } else {
+                        alert(data.message || 'Помилка виходу');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Сталася помилка. Спробуйте ще раз.');
+                });
+            });
+        });
+        
+        function loadProfileData() {
+            fetch('/api/profile')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayProfileData(data.data);
+                } else {
+                    alert(data.message || 'Помилка завантаження профілю');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+        
+        function displayProfileData(data) {
+            // Update user info
+            document.getElementById('userName').textContent = data.user_info.first_name + ' ' + data.user_info.last_name;
+            document.getElementById('profilePicture').src = data.user_info.avatar_url;
+            
+            // Update statistics
+            document.getElementById('totalStars').textContent = data.statistics.total_stars;
+            document.getElementById('postsCreated').textContent = data.statistics.posts_created;
+            document.getElementById('likesReceived').textContent = data.statistics.likes_received;
+            document.getElementById('commentsMade').textContent = data.statistics.comments_made;
+            document.getElementById('likesGiven').textContent = data.statistics.likes_given;
+            
+            // Display user posts
+            displayUserPosts(data.user_posts);
+            
+            // Display user comments
+            displayUserComments(data.user_comments);
+        }
+        
+        function displayUserPosts(posts) {
+            const postsContainer = document.getElementById('userPosts');
+            postsContainer.innerHTML = '';
+            
+            if (posts.length === 0) {
+                postsContainer.innerHTML = '<p class="no-content">Ви ще не створили жодного поста.</p>';
+                return;
+            }
+            
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post-card';
+                postElement.innerHTML = `
+                    <div class="post-header">
+                        <div class="author-info">
+                            <div class="author-details">
+                                <div class="post-timestamp">${formatDate(post.created_at)}</div>
+                            </div>
+                        </div>
+                        <div class="category-badge ${post.category.toLowerCase()}">${post.category}</div>
+                    </div>
+                    <div class="post-content">
+                        <h3 class="post-title">${post.title}</h3>
+                        <p class="post-text">${post.content}</p>
+                    </div>
+                    <div class="post-actions">
+                        <button class="action-button like-button">
+                            <span class="action-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.8 18.9V9.1M19.8 12.1C19.8 11.044 19.356 10.033 18.573 9.25C17.789 8.467 16.778 8.022 15.722 8.022H12.333L12.933 4.911C12.959 4.781 12.951 4.646 12.909 4.52C12.867 4.394 12.793 4.281 12.694 4.19L11.7 3.2L6.3 8.6C6.111 8.789 6 9.044 6 9.3V17.7C6 17.956 6.111 18.211 6.3 18.4L10.278 21.6C10.4 21.711 10.544 21.789 10.7 21.822C10.856 21.856 11.011 21.856 11.167 21.822H15.722C16.4 21.822 17.022 21.556 17.511 21.044C18 20.533 18.267 19.911 18.267 19.178V18.9L16.333 12.333L18.267 12.333H19.2C19.356 12.333 19.5 12.267 19.611 12.156C19.722 12.044 19.789 11.9 19.789 11.733L19.8 12.1Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="action-text">Подобається</span>
+                            <span class="action-count">${post.like_count}</span>
+                        </button>
+                        <button class="action-button delete-button" data-post-id="${post.id}">
+                            <span class="action-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="action-text">Видалити</span>
+                        </button>
+                    </div>
+                `;
+                postsContainer.appendChild(postElement);
+            });
+            
+            // Add event listeners for like buttons
+            document.querySelectorAll('.like-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.closest('.post-card').getAttribute('data-post-id');
+                    toggleLike(postId, this);
+                });
+            });
+            
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.getAttribute('data-post-id');
+                    if (confirm('Ви впевнені, що хочете видалити цей пост?')) {
+                        deletePost(postId);
+                    }
+                });
+            });
+        }
+        
+        function displayUserComments(comments) {
+            const commentsContainer = document.getElementById('userComments');
+            commentsContainer.innerHTML = '';
+            
+            if (comments.length === 0) {
+                commentsContainer.innerHTML = '<p class="no-content">Ви ще не залишили жодного коментаря.</p>';
+                return;
+            }
+            
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment-card';
+                commentElement.innerHTML = `
+                    <div class="comment-content">
+                        <p class="comment-text">${comment.content}</p>
+                        <div class="comment-meta">
+                            <span class="comment-timestamp">${formatDate(comment.created_at)}</span>
+                            <a href="lenta.html#post-${comment.post_id}" class="comment-post-link">До поста</a>
+                        </div>
+                    </div>
+                    <button class="action-button small delete-button" data-comment-id="${comment.id}">
+                        <span class="action-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                    </button>
+                `;
+                commentsContainer.appendChild(commentElement);
+            });
+            
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-button[data-comment-id]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const commentId = this.getAttribute('data-comment-id');
+                    if (confirm('Ви впевнені, що хочете видалити цей коментар?')) {
+                        deleteComment(commentId);
+                    }
+                });
+            });
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('uk-UA') + ' ' + date.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
+        }
+        
+        function toggleLike(postId, buttonElement) {
+            fetch(`/api/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update the like button UI
+                    const likeCount = buttonElement.querySelector('.action-count');
+                    likeCount.textContent = data.data.new_like_count;
+                    
+                    // Change button appearance based on like status
+                    if (data.data.liked_by_user) {
+                        buttonElement.classList.add('liked');
+                    } else {
+                        buttonElement.classList.remove('liked');
+                    }
+                } else {
+                    alert(data.message || 'Помилка при зміні статусу вподобання');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+        
+        function deletePost(postId) {
+            fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Remove the post from the UI
+                    const postElement = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+                    if (postElement) {
+                        postElement.remove();
+                    }
+                    // Reload profile data to update statistics
+                    loadProfileData();
+                } else {
+                    alert(data.message || 'Помилка видалення поста');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+        
+        function deleteComment(commentId) {
+            fetch(`/api/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Remove the comment from the UI
+                    const commentElement = document.querySelector(`.comment-card .delete-button[data-comment-id="${commentId}"]`).closest('.comment-card');
+                    if (commentElement) {
+                        commentElement.remove();
+                    }
+                    // Reload profile data to update statistics
+                    loadProfileData();
+                } else {
+                    alert(data.message || 'Помилка видалення коментаря');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+        
+        function uploadAvatar() {
+            const formData = new FormData();
+            const avatarFile = document.getElementById('avatar').files[0];
+            formData.append('avatar', avatarFile);
+            
+            fetch('/api/avatar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update the profile picture
+                    document.getElementById('profilePicture').src = data.data.avatar_url;
+                    // Show success message
+                    alert('Фото профілю успішно оновлено!');
+                } else {
+                    alert(data.message || 'Помилка завантаження фото');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Сталася помилка. Спробуйте ще раз.');
+            });
+        }
+    </script>
+</body>
+</html>
