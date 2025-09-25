@@ -36,7 +36,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize database
 def init_db():
-    conn = sqlite3.connect('messenger.db')
+    # Ensure the database file is in the correct location
+    db_path = os.environ.get('DATABASE_URL', 'messenger.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
     # Create users table
@@ -240,4 +242,13 @@ def static_files(filename):
     return send_from_directory('static', filename)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5001)
+    # Check if we're running in a production environment
+    if os.environ.get('FLASK_ENV') == 'production':
+        # For production, we need to use a different approach
+        # Get the port from the environment variable, default to 5000 if not set
+        port = int(os.environ.get('PORT', 5000))
+        # Run without debug mode and with allow_unsafe_werkzeug for production
+        socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
+    else:
+        # Development environment
+        socketio.run(app, debug=True, port=5001)
