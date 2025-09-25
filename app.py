@@ -32,7 +32,7 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = 'your-secret-key-here'  # Change this in production
 
 # Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
 
 # Initialize database
 def init_db():
@@ -242,13 +242,13 @@ def static_files(filename):
     return send_from_directory('static', filename)
 
 if __name__ == '__main__':
+    # Get the port from the environment variable, default to 5000 if not set
+    port = int(os.environ.get('PORT', 5000))
+    
     # Check if we're running in a production environment
     if os.environ.get('FLASK_ENV') == 'production':
-        # For production, we need to use a different approach
-        # Get the port from the environment variable, default to 5000 if not set
-        port = int(os.environ.get('PORT', 5000))
-        # Run without debug mode and with allow_unsafe_werkzeug for production
+        # For production, run without debug mode and with allow_unsafe_werkzeug
         socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
     else:
         # Development environment
-        socketio.run(app, debug=True, port=5001)
+        socketio.run(app, debug=True, port=port)

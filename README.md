@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # School Messenger Authentication System
 
 This is a complete authentication system for a school messenger application with login, registration, post functionality, likes, and comments.
@@ -59,6 +58,20 @@ This is a complete authentication system for a school messenger application with
    ```
 
 3. Open your browser and navigate to `http://localhost:5000`
+
+## Deployment to Render
+
+1. Create an account at [Render](https://render.com/)
+2. Fork this repository to your GitHub account
+3. Create a new Web Service on Render
+4. Connect your GitHub repository
+5. Use the following settings:
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn --worker-class eventlet -w 1 wsgi:app`
+   - Environment Variables:
+     - PYTHON_VERSION: 3.9.15
+6. Click "Create Web Service"
+7. Your application will be deployed at the provided URL
 
 ## Design Specifications
 
@@ -132,6 +145,3 @@ The SQLite database contains the following tables:
    - created_at (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)
    - user_id (INTEGER, NOT NULL, FOREIGN KEY REFERENCES users(id))
    - post_id (INTEGER, NOT NULL, FOREIGN KEY REFERENCES posts(id))
-=======
-# gjopwgeoperjgopweg
->>>>>>> 59295acea233254fc0d865d664e86cc88874582f
