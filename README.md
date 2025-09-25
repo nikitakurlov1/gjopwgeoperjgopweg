@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # School Messenger Authentication System
 
 This is a complete authentication system for a school messenger application with login, registration, post functionality, likes, and comments.
@@ -131,3 +132,6 @@ The SQLite database contains the following tables:
    - created_at (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)
    - user_id (INTEGER, NOT NULL, FOREIGN KEY REFERENCES users(id))
    - post_id (INTEGER, NOT NULL, FOREIGN KEY REFERENCES posts(id))
+=======
+# gjopwgeoperjgopweg
+>>>>>>> 59295acea233254fc0d865d664e86cc88874582f
